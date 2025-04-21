@@ -9,11 +9,12 @@ import { useAppStore } from '@/store/modules/app'
 import { usePermissionStore } from '@/store/modules/permission'
 import { useRouter } from 'vue-router'
 import type { RouteLocationNormalizedLoaded, RouteRecordRaw } from 'vue-router'
-import { UserType } from '@/api/login/types'
+import { UserLoginType, UserType } from '@/api/login/types'
 import { useValidator } from '@/hooks/web/useValidator'
 import { Icon } from '@/components/Icon'
 import { useUserStore } from '@/store/modules/user'
 import { BaseButton } from '@/components/Button'
+import type { IResponse } from '#/global'
 
 const { required } = useValidator()
 
@@ -229,49 +230,49 @@ watch(
 
 // 登录
 const signIn = async () => {
+  loading.value = true
   const formRef = await getElFormExpose()
-  await formRef?.validate(async (isValid) => {
-    if (isValid) {
-      loading.value = true
-      const formData = await getFormData<UserType>()
-
-      try {
-        const res = await loginApi(formData)
-
-        if (res) {
-          // 是否记住我
-          if (unref(remember)) {
-            userStore.setLoginInfo({
-              username: formData.username,
-              password: formData.password
-            })
-          } else {
-            userStore.setLoginInfo(undefined)
-          }
-          userStore.setRememberMe(unref(remember))
-          userStore.setUserInfo(res.data)
-          // 是否使用动态路由
-          if (appStore.getDynamicRouter) {
-            getRole()
-          } else {
-            await permissionStore.generateRoutes('static').catch(() => {})
-            permissionStore.getAddRouters.forEach((route) => {
-              addRoute(route as RouteRecordRaw) // 动态添加可访问路由表
-            })
-            permissionStore.setIsAddRouters(true)
-            push({ path: redirect.value || permissionStore.addRouters[0].path })
-          }
-        }
-      } finally {
-        loading.value = false
+  if (!formRef) return
+  const valid = await formRef.validate().catch(() => {})
+  if (valid) {
+    try {
+      const formData = await getFormData()
+      // 设置token（临时使用固定值）
+      userStore.setToken('admin-token')
+      // 设置用户信息（临时使用固定值）
+      userStore.setUserInfo({
+        username: formData.username,
+        password: formData.password,
+        role: 'admin',
+        roleId: '1'
+      })
+      // 记住我
+      userStore.setRememberMe(remember.value)
+      if (remember.value) {
+        userStore.setLoginInfo({
+          username: formData.username,
+          password: formData.password
+        })
+      } else {
+        userStore.setLoginInfo(undefined)
       }
+      // 生成路由
+      await permissionStore.generateRoutes('static')
+      // 添加路由
+      permissionStore.getAddRouters.forEach((route) => {
+        addRoute(route as unknown as RouteRecordRaw)
+      })
+      permissionStore.setIsAddRouters(true)
+      await push({ path: '/dashboard/analysis' })
+    } finally {
+      loading.value = false
     }
-  })
+  }
 }
 
 // 获取角色信息
 const getRole = async () => {
-  const formData = await getFormData<UserType>()
+  const formData = await getFormData<UserLoginType>()
   const params = {
     roleName: formData.username
   }

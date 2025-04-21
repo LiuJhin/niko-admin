@@ -93,8 +93,7 @@ export const useUserStore = defineStore('user', {
     setLoginInfo(loginInfo: UserLoginType | undefined) {
       this.loginInfo = loginInfo
     }
-  },
-  persist: true
+  }
 })
 
 export const useUserStoreWithOut = () => {

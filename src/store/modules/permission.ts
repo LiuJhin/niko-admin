@@ -76,21 +76,7 @@ export const usePermissionStore = defineStore('permission', {
     setMenuTabRouters(routers: AppRouteRecordRaw[]): void {
       this.menuTabRouters = routers
     }
-  },
-  persist: [
-    {
-      pick: ['routers'],
-      storage: localStorage
-    },
-    {
-      pick: ['addRouters'],
-      storage: localStorage
-    },
-    {
-      pick: ['menuTabRouters'],
-      storage: localStorage
-    }
-  ]
+  }
 })
 
 export const usePermissionStoreWithOut = () => {

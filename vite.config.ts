@@ -11,7 +11,6 @@ import PurgeIcons from 'vite-plugin-purge-icons'
 import ServerUrlCopy from 'vite-plugin-url-copy'
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
-import { createStyleImportPlugin, ElementPlusResolve } from 'vite-plugin-style-import'
 import UnoCSS from 'unocss/vite'
 import { visualizer } from 'rollup-plugin-visualizer'
 
@@ -35,35 +34,17 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     plugins: [
       Vue({
         script: {
-          // 开启defineModel
           defineModel: true
         }
       }),
       VueJsx(),
       ServerUrlCopy(),
       progress(),
-      env.VITE_USE_ALL_ELEMENT_PLUS_STYLE === 'false'
-        ? createStyleImportPlugin({
-            resolves: [ElementPlusResolve()],
-            libs: [
-              {
-                libraryName: 'element-plus',
-                esModule: true,
-                resolveStyle: (name) => {
-                  if (name === 'click-outside') {
-                    return ''
-                  }
-                  return `element-plus/es/components/${name.replace(/^el-/, '')}/style/css`
-                }
-              }
-            ]
-          })
-        : undefined,
       EslintPlugin({
         cache: false,
         failOnWarning: false,
         failOnError: false,
-        include: ['src/**/*.vue', 'src/**/*.ts', 'src/**/*.tsx'] // 检查的文件
+        include: ['src/**/*.vue', 'src/**/*.ts', 'src/**/*.tsx']
       }),
       VueI18nPlugin({
         runtimeOnly: true,
@@ -124,10 +105,8 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       target: 'es2015',
       outDir: env.VITE_OUT_DIR || 'dist',
       sourcemap: env.VITE_SOURCEMAP === 'true',
-      // brotliSize: false,
       rollupOptions: {
         plugins: env.VITE_USE_BUNDLE_ANALYZER === 'true' ? [visualizer()] : undefined,
-        // 拆包
         output: {
           manualChunks: {
             'vue-chunks': ['vue', 'vue-router', 'pinia', 'vue-i18n'],
@@ -137,13 +116,12 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
           }
         }
       },
-      cssCodeSplit: !(env.VITE_USE_CSS_SPLIT === 'false'),
+      cssCodeSplit: true,
       cssTarget: ['chrome31']
     },
     server: {
       port: 4000,
       proxy: {
-        // 选项写法
         '/api': {
           target: 'http://127.0.0.1:8000',
           changeOrigin: true,
@@ -160,8 +138,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         'vue',
         'vue-router',
         'vue-types',
-        'element-plus/es/locale/lang/zh-cn',
-        'element-plus/es/locale/lang/en',
+        'element-plus',
         '@iconify/iconify',
         '@vueuse/core',
         'axios',
