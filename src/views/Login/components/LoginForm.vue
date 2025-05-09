@@ -2,7 +2,7 @@
 import { reactive, ref, watch, onMounted, unref } from 'vue'
 import { Form, FormSchema } from '@/components/Form'
 import { useI18n } from '@/hooks/web/useI18n'
-import { ElCheckbox, ElLink } from 'element-plus'
+import { ElCheckbox, ElLink, ElInput, ElImage } from 'element-plus'
 import { useForm } from '@/hooks/web/useForm'
 import { loginApi, getTestRoleApi, getAdminRoleApi } from '@/api/login'
 import { useAppStore } from '@/store/modules/app'
@@ -29,9 +29,83 @@ const { currentRoute, addRoute, push } = useRouter()
 
 const { t } = useI18n()
 
+// 验证码相关
+const captchaCode = ref('')
+const captchaImage = ref('')
+
+// 生成随机验证码
+const generateCaptcha = () => {
+  // 这里模拟生成验证码图片，实际项目中应该调用后端API获取
+  const randomCode = Math.floor(1000 + Math.random() * 9000).toString()
+  captchaCode.value = randomCode
+
+  // 创建更复杂的验证码SVG，添加背景干扰和模糊效果
+  const width = 100
+  const height = 40
+
+  // 生成随机背景线条
+  let lines = ''
+  for (let i = 0; i < 10; i++) {
+    const x1 = Math.floor(Math.random() * width)
+    const y1 = Math.floor(Math.random() * height)
+    const x2 = Math.floor(Math.random() * width)
+    const y2 = Math.floor(Math.random() * height)
+    const color = `rgb(${Math.floor(Math.random() * 200)},${Math.floor(Math.random() * 200)},${Math.floor(Math.random() * 200)})`
+    lines += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1" />`
+  }
+
+  // 生成随机点
+  let dots = ''
+  for (let i = 0; i < 50; i++) {
+    const cx = Math.floor(Math.random() * width)
+    const cy = Math.floor(Math.random() * height)
+    const r = Math.random() * 2
+    const color = `rgb(${Math.floor(Math.random() * 200)},${Math.floor(Math.random() * 200)},${Math.floor(Math.random() * 200)})`
+    dots += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" />`
+  }
+
+  // 生成文字，每个字符单独处理，添加随机旋转和位置偏移
+  let text = ''
+  for (let i = 0; i < randomCode.length; i++) {
+    const char = randomCode[i]
+    const x = 15 + i * 20 + Math.random() * 5 - 2.5
+    const y = 25 + Math.random() * 5 - 2.5
+    const rotate = Math.random() * 20 - 10
+    const fontSize = 20 + Math.random() * 6
+    const color = `rgb(${Math.floor(Math.random() * 100)},${Math.floor(Math.random() * 100)},${Math.floor(Math.random() * 200) + 55})`
+    text += `<text x="${x}" y="${y}" font-family="Arial" font-size="${fontSize}" fill="${color}" transform="rotate(${rotate} ${x} ${y})">${char}</text>`
+  }
+
+  // 组合SVG
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <filter id="blur" x="0" y="0">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="0.5" />
+    </filter>
+    <rect width="100%" height="100%" fill="#f0f0f0" />
+    ${lines}
+    ${dots}
+    <g filter="url(#blur)">${text}</g>
+  </svg>`
+
+  // 转换为Data URL
+  captchaImage.value = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+}
+
+// 页面加载时生成验证码
+onMounted(() => {
+  initLoginInfo()
+  generateCaptcha()
+})
+
+// 刷新验证码
+const refreshCaptcha = () => {
+  generateCaptcha()
+}
+
 const rules = {
   username: [required()],
-  password: [required()]
+  password: [required()],
+  captcha: [required()]
 }
 
 const schema = reactive<FormSchema[]>([
@@ -78,6 +152,47 @@ const schema = reactive<FormSchema[]>([
         if (_e.key === 'Enter') {
           _e.stopPropagation() // 阻止事件冒泡
           signIn()
+        }
+      }
+    }
+  },
+  {
+    field: 'captcha',
+    label: '验证码',
+    component: 'Input',
+    colProps: {
+      span: 24
+    },
+    componentProps: {
+      placeholder: '请输入验证码',
+      style: {
+        width: '100%'
+      }
+    },
+    formItemProps: {
+      slots: {
+        default: () => {
+          return (
+            <>
+              <div class="flex items-center w-[100%]">
+                <ElInput
+                  v-model={captchaCode.value}
+                  placeholder="请输入验证码"
+                  class="w-[65%] mr-2"
+                />
+                <div
+                  class="w-[35%] h-[40px] cursor-pointer flex items-center justify-center"
+                  onClick={refreshCaptcha}
+                >
+                  <img
+                    src={captchaImage.value}
+                    alt="验证码"
+                    class="h-[38px] border border-[#dcdfe6] rounded"
+                  />
+                </div>
+              </div>
+            </>
+          )
         }
       }
     }
@@ -234,6 +349,15 @@ const signIn = async () => {
     if (isValid) {
       loading.value = true
       const formData = await getFormData<UserType>()
+
+      // 验证码验证
+      if (formData.captcha !== captchaCode.value) {
+        // 验证码错误
+        ElMessage.error('验证码错误，请重新输入')
+        generateCaptcha() // 刷新验证码
+        loading.value = false
+        return
+      }
 
       try {
         const res = await loginApi(formData)
