@@ -1,20 +1,19 @@
-<script setup lang="tsx">
-import { reactive, ref, watch, onMounted, unref } from 'vue'
+<script setup lang="ts">
+import { reactive, ref, watch, onMounted } from 'vue'
 import { Form, FormSchema } from '@/components/Form'
 import { useI18n } from '@/hooks/web/useI18n'
 import { ElCheckbox, ElLink } from 'element-plus'
 import { useForm } from '@/hooks/web/useForm'
-import { loginApi, getTestRoleApi, getAdminRoleApi } from '@/api/login'
+import { getTestRoleApi, getAdminRoleApi } from '@/api/login'
 import { useAppStore } from '@/store/modules/app'
 import { usePermissionStore } from '@/store/modules/permission'
 import { useRouter } from 'vue-router'
 import type { RouteLocationNormalizedLoaded, RouteRecordRaw } from 'vue-router'
-import { UserLoginType, UserType } from '@/api/login/types'
+import type { UserLoginType } from '@/api/login/types'
 import { useValidator } from '@/hooks/web/useValidator'
 import { Icon } from '@/components/Icon'
 import { useUserStore } from '@/store/modules/user'
 import { BaseButton } from '@/components/Button'
-import type { IResponse } from '#/global'
 
 const { required } = useValidator()
 
@@ -42,17 +41,19 @@ const schema = reactive<FormSchema[]>([
       span: 24
     },
     formItemProps: {
-      slots: {
-        default: () => {
-          return <h2 class="text-2xl font-bold text-center w-[100%]">{t('login.login')}</h2>
-        }
+      style: {
+        textAlign: 'center',
+        fontSize: '1.5rem',
+        fontWeight: 'bold',
+        width: '100%'
       }
-    }
+    },
+    component: 'Divider',
+    label: t('login.login')
   },
   {
     field: 'username',
     label: t('login.username'),
-    // value: 'admin',
     component: 'Input',
     colProps: {
       span: 24
@@ -64,7 +65,6 @@ const schema = reactive<FormSchema[]>([
   {
     field: 'password',
     label: t('login.password'),
-    // value: 'admin',
     component: 'InputPassword',
     colProps: {
       span: 24
@@ -74,10 +74,9 @@ const schema = reactive<FormSchema[]>([
         width: '100%'
       },
       placeholder: 'admin or test',
-      // 按下enter键触发登录
-      onKeydown: (_e: any) => {
-        if (_e.key === 'Enter') {
-          _e.stopPropagation() // 阻止事件冒泡
+      onKeydown: (e: KeyboardEvent) => {
+        if (e.key === 'Enter') {
+          e.stopPropagation()
           signIn()
         }
       }
@@ -89,20 +88,17 @@ const schema = reactive<FormSchema[]>([
       span: 24
     },
     formItemProps: {
-      slots: {
-        default: () => {
-          return (
-            <>
-              <div class="flex justify-between items-center w-[100%]">
-                <ElCheckbox v-model={remember.value} label={t('login.remember')} size="small" />
-                <ElLink type="primary" underline={false}>
-                  {t('login.forgetPassword')}
-                </ElLink>
-              </div>
-            </>
-          )
-        }
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%'
       }
+    },
+    component: 'Divider',
+    label: '',
+    componentProps: {
+      contentPosition: 'center'
     }
   },
   {
@@ -111,29 +107,14 @@ const schema = reactive<FormSchema[]>([
       span: 24
     },
     formItemProps: {
-      slots: {
-        default: () => {
-          return (
-            <>
-              <div class="w-[100%]">
-                <BaseButton
-                  loading={loading.value}
-                  type="primary"
-                  class="w-[100%]"
-                  onClick={signIn}
-                >
-                  {t('login.login')}
-                </BaseButton>
-              </div>
-              <div class="w-[100%] mt-15px">
-                <BaseButton class="w-[100%]" onClick={toRegister}>
-                  {t('login.register')}
-                </BaseButton>
-              </div>
-            </>
-          )
-        }
+      style: {
+        width: '100%'
       }
+    },
+    component: 'Divider',
+    label: '',
+    componentProps: {
+      contentPosition: 'center'
     }
   },
   {
@@ -143,56 +124,8 @@ const schema = reactive<FormSchema[]>([
     componentProps: {
       contentPosition: 'center'
     }
-  },
-  {
-    field: 'otherIcon',
-    colProps: {
-      span: 24
-    },
-    formItemProps: {
-      slots: {
-        default: () => {
-          return (
-            <>
-              <div class="flex justify-between w-[100%]">
-                <Icon
-                  icon="vi-ant-design:github-filled"
-                  size={iconSize}
-                  class="cursor-pointer ant-icon"
-                  color={iconColor}
-                  hoverColor={hoverColor}
-                />
-                <Icon
-                  icon="vi-ant-design:wechat-filled"
-                  size={iconSize}
-                  class="cursor-pointer ant-icon"
-                  color={iconColor}
-                  hoverColor={hoverColor}
-                />
-                <Icon
-                  icon="vi-ant-design:alipay-circle-filled"
-                  size={iconSize}
-                  color={iconColor}
-                  hoverColor={hoverColor}
-                  class="cursor-pointer ant-icon"
-                />
-                <Icon
-                  icon="vi-ant-design:weibo-circle-filled"
-                  size={iconSize}
-                  color={iconColor}
-                  hoverColor={hoverColor}
-                  class="cursor-pointer ant-icon"
-                />
-              </div>
-            </>
-          )
-        }
-      }
-    }
   }
 ])
-
-const iconSize = 30
 
 const remember = ref(userStore.getRememberMe)
 
@@ -203,6 +136,7 @@ const initLoginInfo = () => {
     setValues({ username, password })
   }
 }
+
 onMounted(() => {
   initLoginInfo()
 })
@@ -236,34 +170,29 @@ const signIn = async () => {
   const valid = await formRef.validate().catch(() => {})
   if (valid) {
     try {
-      const formData = await getFormData()
-      // 设置token（临时使用固定值）
-      userStore.setToken('admin-token')
-      // 设置用户信息（临时使用固定值）
-      userStore.setUserInfo({
-        username: formData.username,
-        password: formData.password,
-        role: 'admin',
-        roleId: '1'
-      })
-      // 记住我
-      userStore.setRememberMe(remember.value)
-      if (remember.value) {
-        userStore.setLoginInfo({
-          username: formData.username,
-          password: formData.password
+      const formData = await getFormData<UserLoginType>()
+      // @ts-ignore
+      const res = await userStore.login(formData)
+      if (res) {
+        // 记住我
+        userStore.setRememberMe(remember.value)
+        if (remember.value) {
+          userStore.setLoginInfo({
+            username: formData.username,
+            password: formData.password
+          })
+        } else {
+          userStore.setLoginInfo(undefined)
+        }
+        // 生成路由
+        await permissionStore.generateRoutes('static')
+        // 添加路由
+        permissionStore.getAddRouters.forEach((route) => {
+          addRoute(route as unknown as RouteRecordRaw)
         })
-      } else {
-        userStore.setLoginInfo(undefined)
+        permissionStore.setIsAddRouters(true)
+        await push({ path: '/dashboard/analysis' })
       }
-      // 生成路由
-      await permissionStore.generateRoutes('static')
-      // 添加路由
-      permissionStore.getAddRouters.forEach((route) => {
-        addRoute(route as unknown as RouteRecordRaw)
-      })
-      permissionStore.setIsAddRouters(true)
-      await push({ path: '/dashboard/analysis' })
     } finally {
       loading.value = false
     }
@@ -310,5 +239,69 @@ const toRegister = () => {
     size="large"
     class="dark:(border-1 border-[var(--el-border-color)] border-solid)"
     @register="formRegister"
-  />
+  >
+    <template #tool>
+      <div class="flex justify-between items-center w-full">
+        <el-checkbox v-model="remember" :label="t('login.remember')" size="small" />
+        <el-link type="primary" :underline="false">
+          {{ t('login.forgetPassword') }}
+        </el-link>
+      </div>
+    </template>
+
+    <template #login>
+      <div class="w-full">
+        <base-button :loading="loading" type="primary" class="w-full" @click="signIn">
+          {{ t('login.login') }}
+        </base-button>
+      </div>
+      <div class="w-full mt-15px">
+        <base-button class="w-full" @click="toRegister">
+          {{ t('login.register') }}
+        </base-button>
+      </div>
+    </template>
+
+    <template #otherIcon>
+      <div class="flex justify-between w-full">
+        <Icon
+          icon="vi-ant-design:github-filled"
+          :size="30"
+          class="cursor-pointer ant-icon"
+          :color="iconColor"
+          :hover-color="hoverColor"
+        />
+        <Icon
+          icon="vi-ant-design:wechat-filled"
+          :size="30"
+          class="cursor-pointer ant-icon"
+          :color="iconColor"
+          :hover-color="hoverColor"
+        />
+        <Icon
+          icon="vi-ant-design:alipay-circle-filled"
+          :size="30"
+          :color="iconColor"
+          :hover-color="hoverColor"
+          class="cursor-pointer ant-icon"
+        />
+        <Icon
+          icon="vi-ant-design:weibo-circle-filled"
+          :size="30"
+          :color="iconColor"
+          :hover-color="hoverColor"
+          class="cursor-pointer ant-icon"
+        />
+      </div>
+    </template>
+  </Form>
 </template>
+
+<style lang="scss" scoped>
+.ant-icon {
+  transition: color 0.3s;
+  &:hover {
+    color: var(--el-color-primary);
+  }
+}
+</style>

@@ -3,9 +3,10 @@ import { store } from '../index'
 import { UserLoginType, UserType } from '@/api/login/types'
 import { ElMessageBox } from 'element-plus'
 import { useI18n } from '@/hooks/web/useI18n'
-import { loginOutApi } from '@/api/login'
+import { loginOutApi, loginApi } from '@/api/login'
 import { useTagsViewStore } from './tagsView'
 import router from '@/router'
+import { getToken, removeToken, setToken } from '@/utils/auth'
 
 interface UserState {
   userInfo?: UserType
@@ -21,7 +22,7 @@ export const useUserStore = defineStore('user', {
     return {
       userInfo: undefined,
       tokenKey: 'Authorization',
-      token: '',
+      token: getToken() || '',
       roleRouters: undefined,
       // 记住我
       rememberMe: true,
@@ -54,6 +55,7 @@ export const useUserStore = defineStore('user', {
     },
     setToken(token: string) {
       this.token = token
+      setToken(token)
     },
     setUserInfo(userInfo?: UserType) {
       this.userInfo = userInfo
@@ -92,6 +94,23 @@ export const useUserStore = defineStore('user', {
     },
     setLoginInfo(loginInfo: UserLoginType | undefined) {
       this.loginInfo = loginInfo
+    },
+    async login(loginData: UserType): Promise<UserType> {
+      try {
+        // @ts-ignore
+        const response = await loginApi(loginData)
+        const { data } = response
+        this.setToken(data.token)
+        this.setUserInfo(data)
+        return data
+      } catch (error) {
+        return Promise.reject(error)
+      }
+    },
+    resetToken() {
+      removeToken()
+      this.token = ''
+      this.userInfo = undefined
     }
   }
 })

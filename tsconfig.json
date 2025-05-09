@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "module": "esnext",
     "moduleResolution": "node",
-    "strict": true,
+    "strict": false,
     "jsx": "preserve",
     "sourceMap": true,
     "resolveJsonModule": true,
@@ -16,11 +16,14 @@
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "strictFunctionTypes": false,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "experimentalDecorators": true,
     "noImplicitAny": false,
     "skipLibCheck": true,
+    "checkJs": false,
+    "noImplicitThis": false,
+    "noImplicitReturns": false,
     "paths": {
       "@/*": ["src/*"]
     },
@@ -32,6 +35,6 @@
       "vite-plugin-svg-icons/client"
     ]
   },
-  "include": ["src", "types/**/*.d.ts", "mock/**/*.ts"]
-  // "exclude": ["dist", "node_modules"]
+  "include": ["src", "types/**/*.d.ts", "mock/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
 }

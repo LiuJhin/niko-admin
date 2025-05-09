@@ -123,7 +123,7 @@
         <el-form-item label="礼物描述">
           <el-input
             type="textarea"
-            rows="3"
+            rows="{3}"
             placeholder="请输入礼物描述"
             v-model="formData.description"
           />
@@ -156,7 +156,7 @@ const handleRemove = (file: UploadFile) => {
   console.log(file)
 }
 
-const handlePreview = async (file: UploadFile) => {
+const handlePreview = async () => {
   const result = await ElMessageBox.confirm('是否预览该文件？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',

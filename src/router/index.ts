@@ -4,7 +4,6 @@ import type { App } from 'vue'
 import { Layout } from '@/utils/routerHelper'
 import { useI18n } from '@/hooks/web/useI18n'
 import { NO_RESET_WHITE_LIST } from '@/constants'
-import { defineStore } from 'pinia'
 
 const { t } = useI18n()
 

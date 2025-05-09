@@ -1,6 +1,6 @@
 import type { EChartsOption } from 'echarts'
 import type { Ref } from 'vue'
-import { unref, ref } from 'vue'
+import { unref } from 'vue'
 import { tryOnUnmounted } from '@vueuse/core'
 import { useDebounceFn } from '@vueuse/core'
 import * as echarts from 'echarts'

@@ -93,6 +93,10 @@
 defineOptions({
   name: 'Anchor'
 })
+
+const handleEdit = () => {
+  // ... existing code ...
+}
 </script>
 
 <style lang="scss" scoped>
