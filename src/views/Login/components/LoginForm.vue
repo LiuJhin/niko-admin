@@ -2,7 +2,7 @@
 import { reactive, ref, watch, onMounted, unref } from 'vue'
 import { Form, FormSchema } from '@/components/Form'
 import { useI18n } from '@/hooks/web/useI18n'
-import { ElCheckbox, ElLink, ElInput, ElImage } from 'element-plus'
+import { ElCheckbox, ElLink, ElInput, ElImage, ElMessage } from 'element-plus'
 import { useForm } from '@/hooks/web/useForm'
 import { loginApi, getTestRoleApi, getAdminRoleApi } from '@/api/login'
 import { useAppStore } from '@/store/modules/app'
@@ -351,7 +351,7 @@ const signIn = async () => {
       const formData = await getFormData<UserType>()
 
       // 验证码验证
-      if (formData.captcha !== captchaCode.value) {
+      if ((formData as any).captcha !== captchaCode.value) {
         // 验证码错误
         ElMessage.error('验证码错误，请重新输入')
         generateCaptcha() // 刷新验证码
