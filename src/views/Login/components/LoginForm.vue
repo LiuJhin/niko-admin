@@ -32,6 +32,7 @@ const { t } = useI18n()
 // 验证码相关
 const captchaCode = ref('')
 const captchaImage = ref('')
+const userCaptcha = ref('')
 
 // 生成随机验证码
 const generateCaptcha = () => {
@@ -103,9 +104,8 @@ const refreshCaptcha = () => {
 }
 
 const rules = {
-  username: [required()],
-  password: [required()],
-  captcha: [required()]
+  mobile: [required()],
+  password: [required()]
 }
 
 const schema = reactive<FormSchema[]>([
@@ -123,7 +123,7 @@ const schema = reactive<FormSchema[]>([
     }
   },
   {
-    field: 'username',
+    field: 'mobile',
     label: t('login.username'),
     // value: 'admin',
     component: 'Input',
@@ -170,13 +170,15 @@ const schema = reactive<FormSchema[]>([
       }
     },
     formItemProps: {
+      validateStatus: '',
+      error: '',
       slots: {
         default: () => {
           return (
             <>
               <div class="flex items-center w-[100%]">
                 <ElInput
-                  v-model={captchaCode.value}
+                  v-model={userCaptcha.value}
                   placeholder="请输入验证码"
                   class="w-[65%] mr-2"
                 />
@@ -313,8 +315,8 @@ const remember = ref(userStore.getRememberMe)
 const initLoginInfo = () => {
   const loginInfo = userStore.getLoginInfo
   if (loginInfo) {
-    const { username, password } = loginInfo
-    setValues({ username, password })
+    const { mobile, password } = loginInfo
+    setValues({ mobile, password })
   }
 }
 onMounted(() => {
@@ -351,10 +353,11 @@ const signIn = async () => {
       const formData = await getFormData<UserType>()
 
       // 验证码验证
-      if ((formData as any).captcha !== captchaCode.value) {
+      if (userCaptcha.value !== captchaCode.value) {
         // 验证码错误
         ElMessage.error('验证码错误，请重新输入')
         generateCaptcha() // 刷新验证码
+        userCaptcha.value = '' // 清空用户输入的验证码
         loading.value = false
         return
       }
@@ -366,7 +369,7 @@ const signIn = async () => {
           // 是否记住我
           if (unref(remember)) {
             userStore.setLoginInfo({
-              username: formData.username,
+              mobile: formData.mobile,
               password: formData.password
             })
           } else {
@@ -397,7 +400,7 @@ const signIn = async () => {
 const getRole = async () => {
   const formData = await getFormData<UserType>()
   const params = {
-    roleName: formData.username
+    roleName: formData.mobile
   }
   const res =
     appStore.getDynamicRouter && appStore.getServerDynamicRouter
